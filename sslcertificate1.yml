@@ -1,0 +1,40 @@
+- hosts: all
+  become: true
+  vars_prompt:
+    - name: server_name
+      prompt: "Server name"
+      private: no
+    - name: email
+      prompt: "Email adress"
+      private: no
+    - name: domain_name
+      prompt: "Common name"
+      private: no
+  tasks:
+   - name: Generate openssl private key
+     openssl_privatekey:
+       path: /etc/ssl/private/{{ server_name }}.key
+       size: 2048
+     become: yes
+   - name: save private key
+     command: echo {{ server_name }}.key
+     register: results
+   - local_action: lineinfile line={{ results.stdout }} dest=/home/vasilis/roles-wordpress/saved_files/private_keys
+   - name: save private key
+     command: less /etc/ssl/private/{{ server_name }}.key
+     register: results
+   - local_action: lineinfile line={{ results.stdout }} dest=/home/vasilis/roles-wordpress/saved_files/private_keys
+   - name: Generate openssl Certificate Signing Request
+     openssl_csr:
+       path: /etc/ssl/private/{{ server_name }}.csr
+       privatekey_path: /etc/ssl/private/{{ server_name }}.key
+       email_address: "{{ email }}"
+       common_name: "{{ domain_name }}"
+   - name: Save csr file
+     command: echo {{ server_name }}.csr
+     register: sresults
+   - local_action: lineinfile line={{ sresults.stdout }} dest=/home/vasilis/roles-wordpress/saved_files/csr_file
+   - name: Save csr file
+     command: less /etc/ssl/private/{{ server_name }}.csr
+     register: sresults
+- local_action: lineinfile line={{ sresults.stdout }} dest=/home/vasilis/roles-wordpress/saved_files/csr_file
