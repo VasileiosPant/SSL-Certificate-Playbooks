@@ -1,0 +1,27 @@
+- hosts: all
+  become: yes
+  tasks:
+   - name: Copy files to remote server
+     copy:
+       src=/home/vasilis/roles-wordpress/{{item}}
+       dest=/etc/ssl/private/
+     with_items:
+       ['file1.crt','file2.crt']
+   - name: Edit configuration file
+     blockinfile:
+       dest: /etc/apache2/sites-available/billexample.com.conf
+       block: |
+         <VirtualHost *:443>
+              ServerName billexample.com
+              ServerAlias www.billexample.com
+              ServerAdmin it21482@hua.gr
+              DocumentRoot /var/www/wordpress
+              SSLEngine on
+              SSLCertificateFile /etc/ssl/private/file1.crt
+              SSLCertificateKeyFile /etc/ssl/private/vagrant-ubuntu-trusty.key
+              SSLCertificateChainFile /etc/ssl/private/file2.crt
+         </VirtualHost>
+   - name: Test apache configuration file
+     command: sudo apachectl configtest
+   - name: Restart apache
+     command: service apache2 restart
